@@ -32,6 +32,12 @@ type app struct {
 	processSecondPerBot time.Duration
 }
 
+type bot struct {
+	id                  int
+	order               *order
+	processSecondPerBot time.Duration
+}
+
 func main() {
 	app := app{
 		botId:               1,
@@ -55,17 +61,20 @@ func main() {
 
 func (a *app) subscribe(orders chan order, results chan order) {
 	go func() {
-		for o := range orders {
-			go a.assignOrderToBot(&o, results)
+		for order := range orders {
+			b := bot{
+				id:                  a.botId,
+				order:               &order,
+				processSecondPerBot: a.processSecondPerBot,
+			}
+			go b.processOrder(&order, results)
 			a.botId++
 		}
 	}()
 }
 
-func (a *app) assignOrderToBot(o *order, results chan<- order) {
-	log.Printf("Processing order %d with bot %v ...", o.id, a.botId)
-	time.Sleep(a.processSecondPerBot)
-	log.Printf("Finished processing order %d with bot %v", o.id, a.botId)
+func (b *bot) processOrder(o *order, results chan<- order) {
+	time.Sleep(b.processSecondPerBot)
 	o.status = Completed
 	results <- *o
 }
