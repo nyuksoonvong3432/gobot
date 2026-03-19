@@ -29,7 +29,7 @@ func main() {
 	}
 
 	orders := make(chan order)
-	app.listen(orders)
+	app.subscribe(orders)
 
 	orders <- order{id: 1, orderType: Normal}
 	orders <- order{id: 2, orderType: Normal}
@@ -37,15 +37,16 @@ func main() {
 	close(orders)
 }
 
-func (a *app) listen(orders <-chan order) {
-	for i := 1; i <= a.botCount; i++ {
-		go bot(i, orders)
-	}
-	for o := range orders {
-		log.Printf("Received order: %v", o)
-	}
+func (a *app) subscribe(orders <-chan order) {
+	go func() {
+		for o := range orders {
+			log.Printf("Received order id: %d", o.id)
+
+		}
+	}()
 }
 
-func bot(id int, orders <-chan order) {
+func bot(id int, orders chan<- order) {
 	log.Println("Bot ", id)
+	time.Sleep(10)
 }
