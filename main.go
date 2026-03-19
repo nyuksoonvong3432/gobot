@@ -48,7 +48,9 @@ func main() {
 	orders <- order{id: 3, orderType: Normal, status: Idle}
 	close(orders)
 
-	<-results
+	for r := range results {
+		log.Printf("Processed order %v", r)
+	}
 }
 
 func (a *app) subscribe(orders chan order, results chan order) {
