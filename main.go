@@ -77,4 +77,5 @@ func (b *bot) processOrder(o *order, results chan<- order) {
 	time.Sleep(b.processSecondPerBot)
 	o.status = Completed
 	results <- *o
+	b.order = nil
 }
