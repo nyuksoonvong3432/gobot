@@ -26,7 +26,6 @@ type order struct {
 }
 
 type app struct {
-	botId               int
 	botCount            int
 	processSecondPerBot time.Duration
 }
@@ -39,18 +38,25 @@ type bot struct {
 
 func main() {
 	app := app{
-		botId:               1,
 		botCount:            5,
 		processSecondPerBot: time.Second * 10,
 	}
 
+	bots := make(chan bot)
 	results := make(chan order)
 	orders := make(chan order)
-	app.subscribe(orders, results)
+
+	app.subscribe(orders, results, bots)
 
 	orders <- order{id: 1, orderType: Normal, status: Idle}
 	orders <- order{id: 2, orderType: Normal, status: Idle}
 	orders <- order{id: 3, orderType: Normal, status: Idle}
+
+	bots <- bot{id: 1, processSecondPerBot: app.processSecondPerBot}
+	bots <- bot{id: 2, processSecondPerBot: app.processSecondPerBot}
+	bots <- bot{id: 3, processSecondPerBot: app.processSecondPerBot}
+
+	orders <- order{id: 4, orderType: Normal, status: Idle}
 	close(orders)
 
 	// for r := range results {
@@ -58,16 +64,14 @@ func main() {
 	// }
 }
 
-func (a *app) subscribe(orders chan order, results chan order) {
+func (a *app) subscribe(orders chan order, results chan order, bots chan bot) {
 	go func() {
 		for order := range orders {
 			b := bot{
-				id:                  a.botId,
 				order:               &order,
 				processSecondPerBot: a.processSecondPerBot,
 			}
 			go b.processOrder(&order, results)
-			a.botId++
 		}
 	}()
 }
