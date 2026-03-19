@@ -73,6 +73,7 @@ func (a *app) subscribe(orders chan order, results chan order) {
 }
 
 func (b *bot) processOrder(o *order, results chan<- order) {
+	o.status = Processing
 	time.Sleep(b.processSecondPerBot)
 	o.status = Completed
 	results <- *o
