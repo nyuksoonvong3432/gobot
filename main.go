@@ -48,17 +48,19 @@ func main() {
 
 	app.subscribe(orders, results, bots)
 
-	orders <- order{id: 1, orderType: Normal, status: Idle}
-	orders <- order{id: 2, orderType: Normal, status: Idle}
-	orders <- order{id: 3, orderType: Normal, status: Idle}
+	for i := 1; i <= 10; i++ {
+		orders <- order{id: i, orderType: Normal, status: Idle}
+	}
 
-	bots <- bot{id: 1, processSecondPerBot: app.processSecondPerBot}
-	bots <- bot{id: 2, processSecondPerBot: app.processSecondPerBot}
-	bots <- bot{id: 3, processSecondPerBot: app.processSecondPerBot}
+	for i := 1; i <= 3; i++ {
+		bots <- bot{id: i, processSecondPerBot: app.processSecondPerBot}
+	}
 
-	orders <- order{id: 4, orderType: Normal, status: Idle}
+	for i := 10; i <= 13; i++ {
+		orders <- order{id: i, orderType: Vip, status: Idle}
+	}
+
 	close(orders)
-
 	// for r := range results {
 	// 	log.Printf("Processed order %v", r)
 	// }
