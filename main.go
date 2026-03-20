@@ -100,18 +100,21 @@ func (a *app) start(normalOrders <-chan order, vipOrders <-chan order, wg *sync.
 }
 
 func bot(id int, normalOrders <-chan order, vipOrders <-chan order, processSecond time.Duration) {
-	for vipOrders != nil || normalOrders != nil {
+	for {
+		// Then process normal orders (blocking)
+		if normalOrders == nil && vipOrders == nil {
+			break // all channels closed
+		}
+
 		select {
 		case o, more := <-vipOrders:
 			if !more {
-				fmt.Println("No more vip orders.")
 				vipOrders = nil
 				continue
 			}
 			processOrder(id, &o, processSecond)
 		case o, more := <-normalOrders:
 			if !more {
-				fmt.Println("No more normal orders.")
 				normalOrders = nil
 				continue
 			}
