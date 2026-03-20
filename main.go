@@ -119,6 +119,6 @@ func processOrder(botId int, o *order, processSecond time.Duration) {
 	fmt.Printf("Bot %d processing order %v\n", botId, o)
 	o.status = Processing
 	time.Sleep(processSecond)
-	fmt.Printf("Bot %d completed order %v\n", botId, o)
 	o.status = Completed
+	fmt.Printf("Bot %d completed order %v\n", botId, o)
 }
