@@ -100,16 +100,20 @@ func (a *app) start(normalOrders <-chan order, vipOrders <-chan order, wg *sync.
 }
 
 func bot(id int, normalOrders <-chan order, vipOrders <-chan order, processSecond time.Duration) {
-	for {
+	for vipOrders != nil || normalOrders != nil {
 		select {
 		case o, more := <-vipOrders:
 			if !more {
-				return
+				fmt.Println("No more vip orders.")
+				vipOrders = nil
+				continue
 			}
 			processOrder(id, &o, processSecond)
 		case o, more := <-normalOrders:
 			if !more {
-				return
+				fmt.Println("No more normal orders.")
+				normalOrders = nil
+				continue
 			}
 			processOrder(id, &o, processSecond)
 		}
