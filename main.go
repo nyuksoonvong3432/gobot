@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"sync"
 	"time"
 )
 
@@ -11,6 +13,17 @@ const (
 	Vip
 )
 
+func (ot orderType) String() string {
+	switch ot {
+	case Normal:
+		return "Normal"
+	case Vip:
+		return "Vip"
+	default:
+		return "Unknown"
+	}
+}
+
 type orderStatus int
 
 const (
@@ -19,20 +32,31 @@ const (
 	Completed
 )
 
+func (os orderStatus) String() string {
+	switch os {
+	case Idle:
+		return "Idle"
+	case Processing:
+		return "Processing"
+	case Completed:
+		return "Completed"
+	default:
+		return "Unknown"
+	}
+}
+
 type order struct {
 	id        int
 	orderType orderType
 	status    orderStatus
 }
 
-type app struct {
-	botCount            int
-	processSecondPerBot time.Duration
+func (o order) String() string {
+	return fmt.Sprintf("Order{id: %d, orderType: %s, status: %s}", o.id, o.orderType, o.status)
 }
 
-type bot struct {
-	id                  int
-	order               *order
+type app struct {
+	botCount            int
 	processSecondPerBot time.Duration
 }
 
@@ -42,46 +66,35 @@ func main() {
 		processSecondPerBot: time.Second * 10,
 	}
 
-	bots := make(chan bot)
-	results := make(chan order)
 	orders := make(chan order)
 
-	app.subscribe(orders, results, bots)
+	var wg sync.WaitGroup
+	app.start(orders, &wg)
 
-	for i := 1; i <= 10; i++ {
-		orders <- order{id: i, orderType: Normal, status: Idle}
-	}
-
-	for i := 1; i <= 3; i++ {
-		bots <- bot{id: i, processSecondPerBot: app.processSecondPerBot}
-	}
-
-	for i := 10; i <= 13; i++ {
-		orders <- order{id: i, orderType: Vip, status: Idle}
-	}
-
+	orders <- order{id: 1, orderType: Normal, status: Idle}
+	orders <- order{id: 2, orderType: Normal, status: Idle}
+	orders <- order{id: 3, orderType: Normal, status: Idle}
 	close(orders)
-	// for r := range results {
-	// 	log.Printf("Processed order %v", r)
-	// }
+
+	wg.Wait()
+
+	fmt.Println("App exited.")
 }
 
-func (a *app) subscribe(orders chan order, results chan order, bots chan bot) {
-	go func() {
-		for order := range orders {
-			b := bot{
-				order:               &order,
-				processSecondPerBot: a.processSecondPerBot,
-			}
-			go b.processOrder(&order, results)
-		}
-	}()
+func (a *app) start(orders <-chan order, wg *sync.WaitGroup) {
+	for b := 1; b <= a.botCount; b++ {
+		wg.Go(func() {
+			bot(b, orders, a.processSecondPerBot)
+		})
+	}
 }
 
-func (b *bot) processOrder(o *order, results chan<- order) {
-	o.status = Processing
-	time.Sleep(b.processSecondPerBot)
-	o.status = Completed
-	results <- *o
-	b.order = nil
+func bot(id int, orders <-chan order, processSecond time.Duration) {
+	for order := range orders {
+		fmt.Printf("Bot %d start processing order %v\n", id, order)
+		order.status = Processing
+		time.Sleep(processSecond)
+		order.status = Completed
+		fmt.Printf("Bot %d completed order %v\n", id, order)
+	}
 }
