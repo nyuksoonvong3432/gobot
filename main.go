@@ -66,35 +66,59 @@ func main() {
 		processSecondPerBot: time.Second * 10,
 	}
 
-	orders := make(chan order)
+	normalOrders := make(chan order)
+	vipOrders := make(chan order)
 
 	var wg sync.WaitGroup
-	app.start(orders, &wg)
+	app.start(normalOrders, vipOrders, &wg)
 
-	orders <- order{id: 1, orderType: Normal, status: Idle}
-	orders <- order{id: 2, orderType: Normal, status: Idle}
-	orders <- order{id: 3, orderType: Normal, status: Idle}
-	close(orders)
+	normalOrders <- order{id: 1, orderType: Normal, status: Idle}
+	normalOrders <- order{id: 2, orderType: Normal, status: Idle}
+	normalOrders <- order{id: 3, orderType: Normal, status: Idle}
+	normalOrders <- order{id: 4, orderType: Normal, status: Idle}
+	normalOrders <- order{id: 5, orderType: Normal, status: Idle}
+
+	normalOrders <- order{id: 6, orderType: Normal, status: Idle}
+	vipOrders <- order{id: 7, orderType: Vip, status: Idle}
+	vipOrders <- order{id: 8, orderType: Vip, status: Idle}
+
+	close(vipOrders)
+	close(normalOrders)
 
 	wg.Wait()
 
 	fmt.Println("App exited.")
 }
 
-func (a *app) start(orders <-chan order, wg *sync.WaitGroup) {
+func (a *app) start(normalOrders <-chan order, vipOrders <-chan order, wg *sync.WaitGroup) {
 	for b := 1; b <= a.botCount; b++ {
 		wg.Go(func() {
-			bot(b, orders, a.processSecondPerBot)
+			bot(b, normalOrders, vipOrders, a.processSecondPerBot)
 		})
 	}
 }
 
-func bot(id int, orders <-chan order, processSecond time.Duration) {
-	for order := range orders {
-		fmt.Printf("Bot %d start processing order %v\n", id, order)
-		order.status = Processing
-		time.Sleep(processSecond)
-		order.status = Completed
-		fmt.Printf("Bot %d completed order %v\n", id, order)
+func bot(id int, normalOrders <-chan order, vipOrders <-chan order, processSecond time.Duration) {
+	for {
+		select {
+		case o, more := <-vipOrders:
+			if !more {
+				return
+			}
+			processOrder(id, &o, processSecond)
+		case o, more := <-normalOrders:
+			if !more {
+				return
+			}
+			processOrder(id, &o, processSecond)
+		}
 	}
+}
+
+func processOrder(botId int, o *order, processSecond time.Duration) {
+	fmt.Printf("Bot %d processing order %v\n", botId, o)
+	o.status = Processing
+	time.Sleep(processSecond)
+	fmt.Printf("Bot %d completed order %v\n", botId, o)
+	o.status = Completed
 }
