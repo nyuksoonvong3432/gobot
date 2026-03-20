@@ -101,6 +101,10 @@ func (a *app) start(normalOrders <-chan order, vipOrders <-chan order, wg *sync.
 
 func bot(id int, normalOrders <-chan order, vipOrders <-chan order, processSecond time.Duration) {
 	for {
+		if normalOrders == nil && vipOrders == nil {
+			break // all channels closed
+		}
+
 		select {
 		case o, more := <-vipOrders:
 			if !more {
