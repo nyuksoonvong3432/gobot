@@ -81,6 +81,7 @@ func main() {
 	normalOrders <- order{id: 6, orderType: Normal, status: Idle}
 	vipOrders <- order{id: 7, orderType: Vip, status: Idle}
 	vipOrders <- order{id: 8, orderType: Vip, status: Idle}
+	normalOrders <- order{id: 9, orderType: Normal, status: Idle}
 
 	close(vipOrders)
 	close(normalOrders)
